@@ -2,8 +2,9 @@ const express = require('express');
 const app = express();
 const cors = require('cors');
 const morgan = require('morgan');
+const router = express.Router();
 
-const { User } = require('./models');
+const { User, Quote } = require('./models');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const config = require('./config');
@@ -15,6 +16,10 @@ const { CLIENT_ORIGIN, DATABASE_URL, PORT } = require('./config');
 
 const mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
+
+// /// QUOTES ROUTER
+// const quotesRouter = require('./quotes/quotes-router');
+// app.use('/quotes', quotesRouter);
 
 // morgan
 app.use(morgan('common'));
@@ -121,6 +126,27 @@ app.post('/users', (req, res) => {
       console.log(err);
       res.status(422).json({
         message: 'Something went wrong'
+      });
+    });
+});
+
+//GET QUOTES
+
+app.get('/quotes', (req, res) => {
+  const perPage = 3;
+  const currentPage = req.query.page || 1;
+
+  Quote.find()
+    .skip(perPage * currentPage - perPage)
+    .limit(perPage)
+    .then(quotes => {
+      res.json({
+        quotes: quotes.map(quote => quote.serialize())
+      });
+    })
+    .catch(err => {
+      res.status(500).json({
+        message: 'Internal server error'
       });
     });
 });

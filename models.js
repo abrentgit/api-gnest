@@ -12,10 +12,10 @@ const UserSchema = mongoose.Schema({
   role: { type: String, default: 'User', required: true }
 });
 
-// const quotesSchema = Schema({
-//   author: { type: String, required: true },
-//   content: { type: String, required: true }
-// });
+const quotesSchema = mongoose.Schema({
+  author: { type: String, required: true },
+  content: { type: String, required: true }
+});
 
 // const entrySchema = new Schema({
 //   date: { type: Date, default: Date.now },
@@ -41,13 +41,13 @@ UserSchema.statics.hashPassword = function(password) {
   return bcrypt.hash(password, 10);
 };
 
-// quotesSchema.methods.serialize = function() {
-//   return {
-//     _id: this._id,
-//     author: this.author,
-//     content: this.content
-//   };
-// };
+quotesSchema.methods.serialize = function() {
+  return {
+    _id: this._id,
+    author: this.author,
+    content: this.content
+  };
+};
 
 // entrySchema.methods.serialize = function() {
 //   return {
@@ -60,6 +60,6 @@ UserSchema.statics.hashPassword = function(password) {
 
 // const Entry = model('Entry', entrySchema);
 const User = mongoose.model('User', UserSchema);
-// const Quote = model('Quote', quotesSchema);
+const Quote = mongoose.model('Quote', quotesSchema);
 
-module.exports = { User };
+module.exports = { User, Quote };
