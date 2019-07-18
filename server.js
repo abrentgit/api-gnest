@@ -3,34 +3,32 @@ const app = express();
 const cors = require('cors');
 const morgan = require('morgan');
 
-const router = express.Router();
 const { User } = require('./models');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const config = require('./config');
+
+const saltRounds = 10;
 const bodyParser = require('body-parser');
 
-// const passport = require('passport');
-
 const { CLIENT_ORIGIN, DATABASE_URL, PORT } = require('./config');
+
 const mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
-
-// import by naming router as userts router
-const { router: usersRouter } = require('./users/router');
-
-// import and rename router to auth router
-// const { router: authRouter } = require('./auth/router');
-// const { jwtStrategy, localStrategy } = require('./auth/strategies');
 
 // morgan
 app.use(morgan('common'));
 
+// CORS
 app.use(
   cors({
     origin: CLIENT_ORIGIN
   })
 );
+
+app.use(bodyParser.json());
+
+// LOGIN AUTH
 
 const createAuthToken = function(user) {
   return jwt.sign({ user }, config.JWT_SECRET, {
@@ -41,7 +39,7 @@ const createAuthToken = function(user) {
   });
 };
 
-app.use(bodyParser.json());
+//LOGIN
 
 app.post('/login', (req, res) => {
   User.findOne(
@@ -84,37 +82,48 @@ app.post('/login', (req, res) => {
   );
 });
 
-// CORS
-// app.use(function(req, res, next) {
-//   res.header('Access-Control-Allow-Origin', '*');
-//   res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization');
-//   res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE');
-//   if (req.method === 'OPTIONS') {
-//     return res.send(204);
-//   }
-//   next();
-// });
+// REGISTER
 
-// REGISTER + LOGIN USER
+app.post('/users', (req, res) => {
+  const requiredFields = ['name', 'password', 'email'];
+  for (let i = 0; i < requiredFields.length; i++) {
+    const field = requiredFields[i];
+    if (!(field in req.body)) {
+      const message = `Missing \`${field}\` in request body`;
+      console.error(message);
+      return res.status(400).send(message);
+    }
+  }
 
-app.use('/api/users/', usersRouter);
-// app.use('/api/auth/', authRouter);
+  const createAuthToken = function(user) {
+    return jwt.sign({ user }, config.JWT_SECRET, {
+      subject: user.email,
+      audience: user.role,
+      expiresIn: config.JWT_EXPIRY,
+      algorithm: 'HS256'
+    });
+  };
 
-// // PASSPORT MODULES
-// passport.use(localStrategy);
-// passport.use(jwtStrategy);
+  let hashed = bcrypt.hashSync(req.body.password, saltRounds);
 
-// const jwtAuth = passport.authenticate('jwt', { session: false });
-
-// app.get('/api/protected', jwtAuth, (req, res) => {
-//   return res.json({
-//     data: 'rosebud'
-//   });
-// });
-
-// app.use('*', (req, res) => {
-//   return res.status(404).json({ message: 'Not Found' });
-// });
+  User.create({
+    name: req.body.name,
+    email: req.body.email,
+    password: hashed
+  })
+    .then(user => {
+      const authToken = createAuthToken(user.serialize());
+      res.status(201).json({
+        authToken
+      });
+    })
+    .catch(err => {
+      console.log(err);
+      res.status(422).json({
+        message: 'Something went wrong'
+      });
+    });
+});
 
 let server;
 

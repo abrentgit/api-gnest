@@ -1,60 +1,34 @@
-const express = require('express');
-const router = express.Router();
-const { User } = require('../models');
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcrypt');
-const config = require('../config');
+// 'use strict';
+// const express = require('express');
+// const passport = require('passport');
 // const bodyParser = require('body-parser');
-// const jsonParser = bodyParser.json();
+// const jwt = require('jsonwebtoken');
 
-const createAuthToken = function(user) {
-  return jwt.sign({ user }, config.JWT_SECRET, {
-    subject: user.email,
-    audience: user.role,
-    expiresIn: config.JWT_EXPIRY,
-    algorithm: 'HS256'
-  });
-};
+// const config = require('../config');
+// const router = express.Router();
 
-router.post('/login', (req, res) => {
-  User.findOne(
-    {
-      email: req.body.email
-    },
-    function(err, user) {
-      console.log('error', err);
-      console.log('user', user);
-      console.log(req.body.email);
-      if (err) {
-        res.status(401).json({
-          error: 'Invalid credentials'
-        });
-      }
+// const createAuthToken = function(user) {
+//   return jwt.sign({ user }, config.JWT_SECRET, {
+//     subject: user.email,
+//     expiresIn: config.JWT_EXPIRY,
+//     algorithm: 'HS256'
+//   });
+// };
 
-      if (!user) {
-        res.status(404).json({
-          error: 'Invalid credentials'
-        });
-      } else {
-        let validPassword = bcrypt.compareSync(
-          req.body.password,
-          user.password
-        );
+// const localAuth = passport.authenticate('local', { session: false });
+// router.use(bodyParser.json());
+// // The user provides a username and password to login
+// router.post('/', localAuth, (req, res) => {
+//   const authToken = createAuthToken(req.user.serialize());
+//   res.json({ authToken });
+// });
 
-        if (!validPassword) {
-          res.status(401).json({
-            error: 'Invalid credentials'
-          });
-        } else {
-          const authToken = createAuthToken(user.serialize());
-          res.status(200).json({
-            authToken,
-            user_id: user._id
-          });
-        }
-      }
-    }
-  );
-});
+// const jwtAuth = passport.authenticate('jwt', { session: false });
 
-module.exports = { router };
+// // The user exchanges a valid JWT for a new one with a later expiration
+// router.post('/refresh', jwtAuth, (req, res) => {
+//   const authToken = createAuthToken(req.user);
+//   res.json({ authToken });
+// });
+
+// module.exports = { router };
