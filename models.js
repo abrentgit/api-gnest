@@ -3,8 +3,6 @@
 const mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
 
-// const bcrypt = require('bcrypt');
-
 const UserSchema = mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, required: true },
@@ -17,11 +15,11 @@ const quotesSchema = mongoose.Schema({
   content: { type: String, required: true }
 });
 
-// const entrySchema = new Schema({
-//   date: { type: Date, default: Date.now },
-//   title: { type: String, required: true },
-//   content: { type: String, required: true }
-// });
+const entrySchema = mongoose.Schema({
+  date: { type: Date, default: Date.now },
+  title: { type: String, required: true },
+  content: { type: String, required: true }
+});
 
 UserSchema.methods.serialize = function() {
   return {
@@ -49,16 +47,16 @@ quotesSchema.methods.serialize = function() {
   };
 };
 
-// entrySchema.methods.serialize = function() {
-//   return {
-//     _id: this._id,
-//     title: this.title,
-//     date: this.date,
-//     content: this.content
-//   };
-// };
+entrySchema.methods.serialize = function() {
+  return {
+    _id: this._id,
+    title: this.title,
+    date: this.date,
+    content: this.content
+  };
+};
 
-// const Entry = model('Entry', entrySchema);
+const Entry = mongoose.model('Entry', entrySchema);
 const User = mongoose.model('User', UserSchema);
 const Quote = mongoose.model('Quote', quotesSchema);
 
