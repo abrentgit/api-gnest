@@ -3,7 +3,7 @@
 const mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
 
-const bcrypt = require('bcrypt');
+// const bcrypt = require('bcrypt');
 
 const UserSchema = mongoose.Schema({
   name: { type: String, required: true },
