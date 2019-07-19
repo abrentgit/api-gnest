@@ -4,7 +4,7 @@ const cors = require('cors');
 const morgan = require('morgan');
 const router = express.Router();
 
-const { User, Quote } = require('./models');
+const { User } = require('./models');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const config = require('./config');
@@ -17,12 +17,18 @@ const { CLIENT_ORIGIN, DATABASE_URL, PORT } = require('./config');
 const mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
 
-// /// QUOTES ROUTER
+// QUOTES ROUTER
 const quotesRouter = require('./quotes/quotes-router');
 app.use('/quotes', quotesRouter);
 
+// ENTRIES ROUTER
+const entriesRouter = require('./entries/entries-router');
+app.use('/entries', entriesRouter);
+
 // morgan
 app.use(morgan('common'));
+app.use(express.json());
+app.use(bodyParser.json());
 
 // CORS
 app.use(
@@ -31,7 +37,42 @@ app.use(
   })
 );
 
-app.use(bodyParser.json());
+// TESTING POST ENTRIES NO ROUTER
+
+// app.post('/entries', (req, res) => {
+//   const requiredFields = ['user', 'title', 'date', 'content'];
+//   for (let i = 0; i < requiredFields.length; i++) {
+//     const field = requiredFields[i];
+//     if (!(field in req.body)) {
+//       const message = `Missing \`${field}\` in request body`;
+//       console.error(message);
+//       return res.status(400).send(message);
+//     }
+//   }
+
+//   const userId = req.body.user;
+
+//   User.findById(userId, (err, user) => {
+//     if (err) {
+//       res.status(422).send({
+//         message: 'Can not find user'
+//       });
+//     } else {
+//       Entry.create({
+//         title: req.body.title,
+//         date: req.body.date,
+//         content: req.body.content
+//       })
+//         .then(order => res.status(201).json(order.serialize()))
+//         .catch(err => {
+//           console.error(err);
+//           res.status(500).json({
+//             error: 'Something went wrong'
+//           });
+//         });
+//     }
+//   });
+// });
 
 // LOGIN AUTH
 

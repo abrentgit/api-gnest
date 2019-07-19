@@ -16,6 +16,7 @@ const quotesSchema = mongoose.Schema({
 });
 
 const entrySchema = mongoose.Schema({
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   date: { type: Date, default: Date.now },
   title: { type: String, required: true },
   content: { type: String, required: true }
@@ -31,13 +32,13 @@ UserSchema.methods.serialize = function() {
   };
 };
 
-UserSchema.methods.validatePassword = function(password) {
-  return bcrypt.compare(password, this.password);
-};
+// UserSchema.methods.validatePassword = function(password) {
+//   return bcrypt.compare(password, this.password);
+// };
 
-UserSchema.statics.hashPassword = function(password) {
-  return bcrypt.hash(password, 10);
-};
+// UserSchema.statics.hashPassword = function(password) {
+//   return bcrypt.hash(password, 10);
+// };
 
 quotesSchema.methods.serialize = function() {
   return {
@@ -50,14 +51,15 @@ quotesSchema.methods.serialize = function() {
 entrySchema.methods.serialize = function() {
   return {
     _id: this._id,
+    user: this.user,
     title: this.title,
     date: this.date,
     content: this.content
   };
 };
 
-const Entry = mongoose.model('Entry', entrySchema);
 const User = mongoose.model('User', UserSchema);
 const Quote = mongoose.model('Quote', quotesSchema);
+const Entry = mongoose.model('Entry', entrySchema);
 
-module.exports = { User, Quote };
+module.exports = { User, Quote, Entry };
