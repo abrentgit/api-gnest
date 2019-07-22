@@ -11,19 +11,12 @@ const config = require('./config');
 
 const saltRounds = 10;
 const bodyParser = require('body-parser');
+const jsonParser = bodyParser.json();
 
 const { CLIENT_ORIGIN, DATABASE_URL, PORT } = require('./config');
 
 const mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
-
-// QUOTES ROUTER
-const quotesRouter = require('./quotes/quotes-router');
-app.use('/quotes', quotesRouter);
-
-// ENTRIES ROUTER
-const entriesRouter = require('./entries/entries-router');
-app.use('/entries', entriesRouter);
 
 // morgan
 app.use(morgan('common'));
@@ -37,42 +30,23 @@ app.use(
   })
 );
 
-// TESTING POST ENTRIES NO ROUTER
+app.use(function(req, res, next) {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE');
+  if (req.method === 'OPTIONS') {
+    return res.send(204);
+  }
+  next();
+});
 
-// app.post('/entries', (req, res) => {
-//   const requiredFields = ['user', 'title', 'date', 'content'];
-//   for (let i = 0; i < requiredFields.length; i++) {
-//     const field = requiredFields[i];
-//     if (!(field in req.body)) {
-//       const message = `Missing \`${field}\` in request body`;
-//       console.error(message);
-//       return res.status(400).send(message);
-//     }
-//   }
+// QUOTES ROUTER
+const quotesRouter = require('./quotes/quotes-router');
+app.use('/quotes', quotesRouter);
 
-//   const userId = req.body.user;
-
-//   User.findById(userId, (err, user) => {
-//     if (err) {
-//       res.status(422).send({
-//         message: 'Can not find user'
-//       });
-//     } else {
-//       Entry.create({
-//         title: req.body.title,
-//         date: req.body.date,
-//         content: req.body.content
-//       })
-//         .then(order => res.status(201).json(order.serialize()))
-//         .catch(err => {
-//           console.error(err);
-//           res.status(500).json({
-//             error: 'Something went wrong'
-//           });
-//         });
-//     }
-//   });
-// });
+// ENTRIES ROUTER
+const entriesRouter = require('./entries/entries-router');
+app.use('/entries', entriesRouter);
 
 // LOGIN AUTH
 
@@ -83,6 +57,39 @@ const createAuthToken = function(user) {
     expiresIn: config.JWT_EXPIRY,
     algorithm: 'HS256'
   });
+};
+
+// MIDDLE WEAR
+const verifyUser = function(req, res, next) {
+  if (!req.headers.authorization) {
+    res.status(401).json({
+      message: 'Invalid credentials'
+    });
+    return;
+  }
+
+  const tokenSplit = req.headers.authorization.split(' ');
+  const token = tokenSplit[1];
+
+  if (token) {
+    jwt.verify(token, config.JWT_SECRET, function(error, decoded) {
+      if (!error) {
+        req.decoded = decoded;
+
+        if (req.decoded.aud === 'Guest') {
+          next();
+        } else {
+          res.status(401).json({
+            message: 'Invalid credentials'
+          });
+        }
+      } else {
+        res.status(401).json({
+          message: 'Invalid credentials'
+        });
+      }
+    });
+  }
 };
 
 //LOGIN
@@ -130,7 +137,7 @@ app.post('/login', (req, res) => {
 
 // REGISTER
 
-app.post('/users', (req, res) => {
+app.post('/users', verifyUser, (req, res) => {
   const requiredFields = ['name', 'password', 'email'];
   for (let i = 0; i < requiredFields.length; i++) {
     const field = requiredFields[i];

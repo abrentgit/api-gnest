@@ -1,8 +1,41 @@
 const express = require('express');
 const router = express.Router();
 const { Quote } = require('../models');
+const config = require('../config');
 
-router.get('/', (req, res) => {
+const verifyUser = function(req, res, next) {
+  if (!req.headers.authorization) {
+    res.status(401).json({
+      message: 'Invalid credentials'
+    });
+    return;
+  }
+
+  const tokenSplit = req.headers.authorization.split(' ');
+  const token = tokenSplit[1];
+
+  if (token) {
+    jwt.verify(token, config.JWT_SECRET, function(error, decoded) {
+      if (!error) {
+        req.decoded = decoded;
+
+        if (req.decoded.aud === 'Guest') {
+          next();
+        } else {
+          res.status(401).json({
+            message: 'Invalid credentials'
+          });
+        }
+      } else {
+        res.status(401).json({
+          message: 'Invalid credentials'
+        });
+      }
+    });
+  }
+};
+
+router.get('/', verifyUser, (req, res) => {
   const perPage = 3;
   const currentPage = req.query.page || 1;
 
@@ -23,7 +56,7 @@ router.get('/', (req, res) => {
 
 // GET quotes BY ID
 
-router.get('/:id', (req, res) => {
+router.get('/:id', verifyUser, (req, res) => {
   Quote.findById(req.params.id)
     .then(quote => res.json(quote.serialize()))
     .catch(err => {
@@ -34,7 +67,7 @@ router.get('/:id', (req, res) => {
     });
 });
 
-router.post('/', (req, res) => {
+router.post('/', verifyUser, (req, res) => {
   const requiredFields = ['author', 'content'];
   for (let i = 0; i < requiredFields.length; i++) {
     const field = requiredFields[i];

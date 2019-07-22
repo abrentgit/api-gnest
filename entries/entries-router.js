@@ -3,10 +3,43 @@ const router = express.Router();
 const { Entry, User } = require('../models');
 const bodyParser = require('body-parser');
 const jsonParser = bodyParser.json();
+const config = require('../config');
+
+const verifyUser = function(req, res, next) {
+  if (!req.headers.authorization) {
+    res.status(401).json({
+      message: 'Invalid credentials'
+    });
+    return;
+  }
+
+  const tokenSplit = req.headers.authorization.split(' ');
+  const token = tokenSplit[1];
+
+  if (token) {
+    jwt.verify(token, config.JWT_SECRET, function(error, decoded) {
+      if (!error) {
+        req.decoded = decoded;
+
+        if (req.decoded.aud === 'Guest') {
+          next();
+        } else {
+          res.status(401).json({
+            message: 'Invalid credentials'
+          });
+        }
+      } else {
+        res.status(401).json({
+          message: 'Invalid credentials'
+        });
+      }
+    });
+  }
+};
 
 // GET ENTRY - good
 
-router.get('/', (req, res) => {
+router.get('/', verifyUser, (req, res) => {
   const perPage = 3;
   const currentPage = req.query.page || 1;
 
@@ -25,9 +58,9 @@ router.get('/', (req, res) => {
     });
 });
 
-// POST ENTRIES
+// POST ENTRIES - WORKS
 
-router.post('/', jsonParser, (req, res) => {
+router.post('/', verifyUser, jsonParser, (req, res) => {
   const requiredFields = ['user', 'title', 'date', 'content'];
   for (let i = 0; i < requiredFields.length; i++) {
     const field = requiredFields[i];
@@ -76,16 +109,16 @@ router.post('/', jsonParser, (req, res) => {
 
 // GET ENTRY BY ID - good
 
-// router.get('/:id', (req, res) => {
-//   Entry.findById(req.params.id)
-//     .then(entry => res.json(entry.serialize()))
-//     .catch(err => {
-//       console.error(err);
-//       res.status(500).json({
-//         error: 'Something went horribly wrong'
-//       });
-//     });
-// });
+router.get('/:id', (req, res) => {
+  Entry.findById(req.params.id)
+    .then(entry => res.json(entry.serialize()))
+    .catch(err => {
+      console.error(err);
+      res.status(500).json({
+        error: 'Something went horribly wrong'
+      });
+    });
+});
 
 // // UPDATE ENTRY
 
