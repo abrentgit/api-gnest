@@ -11,7 +11,6 @@ const config = require('./config');
 
 const saltRounds = 10;
 const bodyParser = require('body-parser');
-const jsonParser = bodyParser.json();
 
 const { CLIENT_ORIGIN, DATABASE_URL, PORT } = require('./config');
 
@@ -23,13 +22,6 @@ app.use(morgan('common'));
 app.use(express.json());
 app.use(bodyParser.json());
 
-// CORS
-app.use(
-  cors({
-    origin: CLIENT_ORIGIN
-  })
-);
-
 app.use(function(req, res, next) {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization');
@@ -39,6 +31,13 @@ app.use(function(req, res, next) {
   }
   next();
 });
+
+// CORS
+// app.use(
+//   cors({
+//     origin: CLIENT_ORIGIN
+//   })
+// );
 
 // QUOTES ROUTER
 const quotesRouter = require('./quotes/quotes-router');
@@ -92,6 +91,49 @@ const verifyUser = function(req, res, next) {
   }
 };
 
+// REGISTER
+
+app.post('/users', (req, res) => {
+  const requiredFields = ['name', 'password', 'email'];
+  for (let i = 0; i < requiredFields.length; i++) {
+    const field = requiredFields[i];
+    if (!(field in req.body)) {
+      const message = `Missing \`${field}\` in request body`;
+      console.error(message);
+      return res.status(400).send(message);
+    }
+  }
+
+  const createAuthToken = function(user) {
+    return jwt.sign({ user }, config.JWT_SECRET, {
+      subject: user.email,
+      audience: user.role,
+      expiresIn: config.JWT_EXPIRY,
+      algorithm: 'HS256'
+    });
+  };
+
+  let hashed = bcrypt.hashSync(req.body.password, saltRounds);
+
+  User.create({
+    name: req.body.name,
+    email: req.body.email,
+    password: hashed
+  })
+    .then(user => {
+      const authToken = createAuthToken(user.serialize());
+      res.status(201).json({
+        authToken
+      });
+    })
+    .catch(err => {
+      console.log(err);
+      res.status(422).json({
+        message: 'Something went wrong'
+      });
+    });
+});
+
 //LOGIN
 
 app.post('/login', (req, res) => {
@@ -135,47 +177,14 @@ app.post('/login', (req, res) => {
   );
 });
 
-// REGISTER
+app.get('/protected', verifyUser, (req, res) => {
+  return res.json({
+    data: 'rosebud'
+  });
+});
 
-app.post('/users', verifyUser, (req, res) => {
-  const requiredFields = ['name', 'password', 'email'];
-  for (let i = 0; i < requiredFields.length; i++) {
-    const field = requiredFields[i];
-    if (!(field in req.body)) {
-      const message = `Missing \`${field}\` in request body`;
-      console.error(message);
-      return res.status(400).send(message);
-    }
-  }
-
-  const createAuthToken = function(user) {
-    return jwt.sign({ user }, config.JWT_SECRET, {
-      subject: user.email,
-      audience: user.role,
-      expiresIn: config.JWT_EXPIRY,
-      algorithm: 'HS256'
-    });
-  };
-
-  let hashed = bcrypt.hashSync(req.body.password, saltRounds);
-
-  User.create({
-    name: req.body.name,
-    email: req.body.email,
-    password: hashed
-  })
-    .then(user => {
-      const authToken = createAuthToken(user.serialize());
-      res.status(201).json({
-        authToken
-      });
-    })
-    .catch(err => {
-      console.log(err);
-      res.status(422).json({
-        message: 'Something went wrong'
-      });
-    });
+app.use('*', (req, res) => {
+  return res.status(404).json({ message: 'Not Found' });
 });
 
 let server;
