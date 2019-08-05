@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { Quote } = require('../models');
+const jwt = require('jsonwebtoken');
 const config = require('../config');
 
 const verifyUser = function(req, res, next) {
@@ -18,8 +19,8 @@ const verifyUser = function(req, res, next) {
     jwt.verify(token, config.JWT_SECRET, function(error, decoded) {
       if (!error) {
         req.decoded = decoded;
-
-        if (req.decoded.aud === 'Guest') {
+        // console.log(decoded, 'this is token');
+        if (req.decoded.aud === 'User') {
           next();
         } else {
           res.status(401).json({
@@ -43,6 +44,7 @@ router.get('/', verifyUser, (req, res) => {
     .skip(perPage * currentPage - perPage)
     .limit(perPage)
     .then(quotes => {
+      console.log(quotes);
       res.json({
         quotes: quotes.map(quote => quote.serialize())
       });

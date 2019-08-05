@@ -4,7 +4,7 @@ const cors = require('cors');
 const morgan = require('morgan');
 const router = express.Router();
 
-const { User } = require('./models');
+const { User, Quote } = require('./models');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const config = require('./config');
@@ -27,17 +27,10 @@ app.use(function(req, res, next) {
   res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization');
   res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE');
   if (req.method === 'OPTIONS') {
-    return res.send(204);
+    return res.sendStatus(204);
   }
   next();
 });
-
-// CORS
-// app.use(
-//   cors({
-//     origin: CLIENT_ORIGIN
-//   })
-// );
 
 // QUOTES ROUTER
 const quotesRouter = require('./quotes/quotes-router');
@@ -58,7 +51,7 @@ const createAuthToken = function(user) {
   });
 };
 
-// MIDDLE WEAR
+// MIDDLE WEAR AUTH
 const verifyUser = function(req, res, next) {
   if (!req.headers.authorization) {
     res.status(401).json({
@@ -75,7 +68,7 @@ const verifyUser = function(req, res, next) {
       if (!error) {
         req.decoded = decoded;
 
-        if (req.decoded.aud === 'Guest') {
+        if (req.decoded.aud === 'User') {
           next();
         } else {
           res.status(401).json({
@@ -90,6 +83,26 @@ const verifyUser = function(req, res, next) {
     });
   }
 };
+
+app.get('/quotes', verifyUser, (req, res) => {
+  const perPage = 3;
+  const currentPage = req.query.page || 1;
+
+  Quote.find()
+    .skip(perPage * currentPage - perPage)
+    .limit(perPage)
+    .then(quotes => {
+      console.log(quotes);
+      res.json({
+        quotes: quotes.map(quote => quote.serialize())
+      });
+    })
+    .catch(err => {
+      res.status(500).json({
+        message: 'Internal server error'
+      });
+    });
+});
 
 // REGISTER
 
@@ -181,10 +194,6 @@ app.get('/protected', verifyUser, (req, res) => {
   return res.json({
     data: 'rosebud'
   });
-});
-
-app.use('*', (req, res) => {
-  return res.status(404).json({ message: 'Not Found' });
 });
 
 let server;
