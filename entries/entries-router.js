@@ -4,6 +4,7 @@ const { Entry, User } = require('../models');
 const bodyParser = require('body-parser');
 const jsonParser = bodyParser.json();
 const config = require('../config');
+const jwt = require('jsonwebtoken');
 
 const verifyUser = function(req, res, next) {
   if (!req.headers.authorization) {
@@ -21,7 +22,7 @@ const verifyUser = function(req, res, next) {
       if (!error) {
         req.decoded = decoded;
 
-        if (req.decoded.aud === 'Guest') {
+        if (req.decoded.aud === 'User') {
           next();
         } else {
           res.status(401).json({
@@ -145,5 +146,21 @@ router.get('/:id', (req, res) => {
 //       })
 //     );
 // });
+
+// get user:id/entries
+
+router.get('/user/:id/', verifyUser, (req, res) => {
+  User.findById(req.params.id, function(errUser, user) {
+    if (errUser) {
+      res.status(404).json({
+        message: 'Can not find user'
+      });
+    } else {
+      res.json({
+        entries: user.entries.map(entry => entry.serialize())
+      });
+    }
+  });
+});
 
 module.exports = router;
