@@ -41,7 +41,7 @@ const verifyUser = function(req, res, next) {
 // GET ENTRY - good
 
 router.get('/', verifyUser, (req, res) => {
-  const perPage = 3;
+  const perPage = 10;
   const currentPage = req.query.page || 1;
 
   Entry.find()
@@ -80,10 +80,13 @@ router.post('/', verifyUser, jsonParser, (req, res) => {
         message: 'Can not find user'
       });
     } else {
+      const userId = req.body.user;
+
       Entry.create({
         title: req.body.title,
         date: req.body.date,
-        content: req.body.content
+        content: req.body.content,
+        user: userId
       })
         .then(order => res.status(201).json(order.serialize()))
         .catch(err => {
@@ -121,6 +124,19 @@ router.get('/:id', (req, res) => {
     });
 });
 
+// GET ENTRIES BY USER ID
+router.get('/:user/:id', verifyUser, (req, res) => {
+  Entry.find({ user: req.params.user })
+    .sort({ user: req.params.user })
+    .exec()
+    .then(entries => {
+      res.status(200).json(entries);
+    })
+    .catch(err => {
+      res.status(500).json({ message: 'Internal Server Error' });
+    });
+});
+
 // // UPDATE ENTRY
 
 // router.put('/:id', (req, res) => {
@@ -147,20 +163,39 @@ router.get('/:id', (req, res) => {
 //     );
 // });
 
-// get user:id/entries
+// get all entries by a particular user:id
 
-router.get('/user/:id/', verifyUser, (req, res) => {
-  User.findById(req.params.id, function(errUser, user) {
-    if (errUser) {
-      res.status(404).json({
-        message: 'Can not find user'
-      });
-    } else {
-      res.json({
-        entries: user.entries.map(entry => entry.serialize())
-      });
-    }
-  });
-});
+// get entries, and only the entries that have the user ID
+
+// find entries, and query for specific user ID
+
+// router.get('/user/:id/', verifyUser, (req, res) => {
+//   console.log('is this route rocking?');
+
+//   const query = Entry.find({ user: req.body.user}, null);
+//   const promise = query.exec();
+//   promise.
+// User.findById(req.params.id, function(errUser, user) {
+//   if (errUser) {
+//     res.status(404).json({
+//       message: 'Can not find user'
+//     });
+//   } else {
+//     let found = order.dishes.find(dish => dish.id === req.params.dish_id);
+
+// 		if (found === false) {
+// 			res.status(404).json({
+// 				message: 'Can not find dish'
+// 			});
+// 		} else {
+// 			const filtered = order.dishes.filter(
+// 				dish => dish.id === req.params.dish_id
+// 			);
+// 			order.dishes = filtered;
+// 				res.status(200).json(filtered);
+// 			}
+// 		}
+// 	});
+// });
 
 module.exports = router;

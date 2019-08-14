@@ -190,12 +190,6 @@ app.post('/login', (req, res) => {
   );
 });
 
-app.get('/protected', verifyUser, (req, res) => {
-  return res.json({
-    data: 'rosebud'
-  });
-});
-
 let server;
 
 function runServer(databaseUrl, port = PORT) {
