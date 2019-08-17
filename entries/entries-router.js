@@ -113,29 +113,49 @@ router.post('/', verifyUser, jsonParser, (req, res) => {
 
 // GET ENTRY BY ID - good
 
-router.get('/:id', (req, res) => {
-  Entry.findById(req.params.id)
-    .then(entry => res.json(entry.serialize()))
-    .catch(err => {
-      console.error(err);
-      res.status(500).json({
-        error: 'Something went horribly wrong'
-      });
-    });
-});
+// router.get('/:id', verifyUser, (req, res) => {
+//   Entry.findById(req.params.id)
+//     .then(entry => res.json(entry.serialize()))
+//     .catch(err => {
+//       console.error(err);
+//       res.status(500).json({
+//         error: 'Something went horribly wrong'
+//       });
+//     });
+// });
 
 // GET ENTRIES BY USER ID
-router.get('/:user/:id', verifyUser, (req, res) => {
-  Entry.find({ user: req.params.user })
-    .sort({ user: req.params.user })
-    .exec()
-    .then(entries => {
-      res.status(200).json(entries);
-    })
-    .catch(err => {
-      res.status(500).json({ message: 'Internal Server Error' });
-    });
+router.get('/users/:userid', verifyUser, (req, res) => {
+  User.findById(userId, (err, user) => {
+    if (err) {
+      res.status(422).send({
+        message: 'Can not find user'
+      });
+    } else {
+      console.log('user is found', user);
+      const userId = req.params.user;
+      Entry.sort({ user: userId })
+        .then(entries => {
+          console.log('getting entries');
+          res.status(200).json(entries);
+        })
+        .catch(err => {
+          res.status(500).json({ message: 'Internal Server Error' });
+        });
+    }
+  });
 });
+
+//   })
+//     .sort({ user: req.query.user })
+//     .exec()
+//     .then(entries => {
+//       res.status(200).json(entries);
+//     })
+//     .catch(err => {
+//       res.status(500).json({ message: 'Internal Server Error' });
+//     });
+// });
 
 // // UPDATE ENTRY
 
