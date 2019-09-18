@@ -125,25 +125,42 @@ router.post('/', verifyUser, jsonParser, (req, res) => {
 // });
 
 // GET ENTRIES BY USER ID
-router.get('/users/:userid', verifyUser, (req, res) => {
-  User.findById(userId, (err, user) => {
-    if (err) {
-      res.status(422).send({
-        message: 'Can not find user'
+// find then map the entries into invidivdual entries
+// then if the single entry has user ID then return
+// router.get('/:userid', verifyUser, (req, res) => {
+//   Entry.find({ user: req.params.id }).exec(function(err, entries) {
+//     if (err) {
+//       console.log('entries');
+//       res.status({ message: 'entries not found' });
+//     } else {
+//       res.json(entries);
+//     }
+//   });
+// });
+
+// jacking this......
+
+router.get('/entries/:user', function(req, res) {
+  Entry.find()
+    .sort('date')
+    .then(function(entries) {
+      let entryOutput = []; // created empty array
+      entries.map(function(entry) {
+        // map isolates each entry
+        if (entry.user == req.params.user) {
+          entryOutput.push(entry);
+        }
       });
-    } else {
-      console.log('user is found', user);
-      const userId = req.params.user;
-      Entry.sort({ user: userId })
-        .then(entries => {
-          console.log('getting entries');
-          res.status(200).json(entries);
-        })
-        .catch(err => {
-          res.status(500).json({ message: 'Internal Server Error' });
-        });
-    }
-  });
+      res.json({
+        entryOutput
+      });
+    })
+    .catch(function(err) {
+      console.error(err);
+      res.status(500).json({
+        message: 'Internal server error'
+      });
+    });
 });
 
 //   })
@@ -186,36 +203,5 @@ router.get('/users/:userid', verifyUser, (req, res) => {
 // get all entries by a particular user:id
 
 // get entries, and only the entries that have the user ID
-
-// find entries, and query for specific user ID
-
-// router.get('/user/:id/', verifyUser, (req, res) => {
-//   console.log('is this route rocking?');
-
-//   const query = Entry.find({ user: req.body.user}, null);
-//   const promise = query.exec();
-//   promise.
-// User.findById(req.params.id, function(errUser, user) {
-//   if (errUser) {
-//     res.status(404).json({
-//       message: 'Can not find user'
-//     });
-//   } else {
-//     let found = order.dishes.find(dish => dish.id === req.params.dish_id);
-
-// 		if (found === false) {
-// 			res.status(404).json({
-// 				message: 'Can not find dish'
-// 			});
-// 		} else {
-// 			const filtered = order.dishes.filter(
-// 				dish => dish.id === req.params.dish_id
-// 			);
-// 			order.dishes = filtered;
-// 				res.status(200).json(filtered);
-// 			}
-// 		}
-// 	});
-// });
 
 module.exports = router;

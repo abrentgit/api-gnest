@@ -37,7 +37,7 @@ const verifyUser = function(req, res, next) {
 };
 
 router.get('/', verifyUser, (req, res) => {
-  const perPage = 3;
+  const perPage = 1;
   const currentPage = req.query.page || 1;
 
   Quote.find()
